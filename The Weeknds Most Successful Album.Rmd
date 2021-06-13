@@ -1,0 +1,123 @@
+---
+title: "The Weeknd's Most Successful Album in the United States"
+author: "Melisa Esqueda"
+date: "1/1/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+The purpose of this project is to analyze which albums from The Weeknd were the most successful in terms of the rankings of the songs on the Billboard Hot 100 charts. The Billboard Hot 100 chart is the standard ranking chart for top songs that are based on sales, radioplay, and streaming (Source: https://en.wikipedia.org/wiki/Billboard_Hot_100). The hot 100 dataset was obtained from Sean Miller from dataworld (Source: https://data.world/kcmillersean/billboard-hot-100-1958-2017)
+
+## The Weeknd's Songs
+
+```{r}
+#Packages
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+#Extract The Weeknd's songs from the dataset. 
+hot_100 = read.csv("hot100.csv")
+
+#Rename the columns to make the table look more neat.
+hot_100_tbl = rename(hot_100, Url = ï..url, Week_ID = WeekID, Week_Position = Week.Position, Song_ID = SongID, Previous_Week_Position = Previous.Week.Position, Peak_Position = Peak.Position, Weeks_on_Chart = Weeks.on.Chart)
+weeknd_only = filter(hot_100_tbl, Performer == "The Weeknd")
+```
+The Weeknd has six albums in total. These albums include: Trilogy, Kiss Land, Beauty Behind The Madness, Starboy, My Dear Melancholy (Extended Play) and After Hours.
+
+## Trilogy
+```{R}
+trilogy_songs = c("High for This", "What You Need", "House of Balloons / Glass Table Girls", "The Morning", "Wicked Games", "The Party & the After Party", "Coming Down", "Loft Music", "The Knowing", "Twenty Eight", 	"Lonely Star", "Life of the Party", "Thursday", 	"The Zone", "The Birds, Pt. 1", "The Birds, Pt. 2", "Gone", "Rolling Stone", "Heaven or Las Vegas", "Valerie", 	"D.D.",	"Montreal", "Outside", "XO / The Host", "Initiation", "Same Old Song", "The Fall", "Next", "Echoes of Silence", "Till Dawn (Here Comes the Sun)")
+trilogy = weeknd_only[is.element(weeknd_only$Song, trilogy_songs), ]
+trilogy
+```
+
+
+# Kiss Land
+```{R}
+kissland_songs = c("Professional", "The Town", "Adaption", "Love in the Sky", "Belong to the World", "Live For", "Wanderlust", "Kiss Land", "Pretty", "Tears in the Rain", "Odd Look")
+kissland = weeknd_only[is.element(weeknd_only$Song, kissland_songs), ]
+kissland
+```
+
+# Beauty Behind the Madness
+```{R}
+bbtm_songs = c("Real Life", "Losers", "Tell Your Friends", "Often", "The Hills", "Acquianted", "Can't Feel My Face", "Shameless", "Earned It", "In The Night", "As You Are", "Dark Times", "Prisoners", "Angel")
+bbtm = weeknd_only[is.element(weeknd_only$Song, bbtm_songs), ]
+```
+
+# Starboy
+```{R}
+starboy_songs = c("Starboy", "Party Monster", "False Alarm", "Reminder", "Rockin'", "Secrets", "True Colors", "Stargirl Interlude", "Sidewalks", "Six Feet Under", "Love to Lay", "A Lonely Night", "Attention", "ORdinary Life", "Nothing Without You", "All I Know", "Die For You", "I feel It Coming")
+starboy = weeknd_only[is.element(weeknd_only$Song, starboy_songs), ]
+```
+
+# My Dear Melancholy
+```{R}
+mdm_songs = c("Call Out My Name", "Try Me", "Wasted Times", "I Was Never There", "Hurt You", "Privilege")
+mdm = weeknd_only[is.element(weeknd_only$Song, mdm_songs), ]
+```
+# After Hours
+```{R}
+ah_songs = c("Alone Again", "Too Late", "Hardest to Love", "Scared to Live", "Snowchild", "Escape From LA", "Heartless", "Faith", "Blinding Lights", "In Your Eyes", "Save Your Tears", "Repeat After Me", "After Hours", "Until I Bleed Out")
+ah = weeknd_only[is.element(weeknd_only$Song, ah_songs), ]
+ah
+```
+
+# The Chart Performances of The Songs From Each Album
+
+**NOTE: No songs from the Kiss Land Album made it to the hot 100 charts.**
+
+## Trilogy
+
+```{R}
+trilogy_performance = ggplot(trilogy) + geom_boxplot(aes(x = Week_Position, y = Song, color = Song)) + labs(x = "Week Position", y = "Songs", title = "The Trilogy Song Rankings on the Billboard Hot 100 Chart") + xlim(1, 100)
+trilogy_performance
+```
+
+## Beauty Behind The Madness
+
+```{R}
+bbtm_performance = ggplot(bbtm) + geom_boxplot(aes(x = Week_Position, y = Song, color = Song)) + labs(x = "Week Position", y = "Songs", title = "Beauty Behind The Madness Song Rankings on the Billboard Hot 100 Chart") + xlim(1, 100) + theme(plot.title = element_text(size= 12, hjust = 0.5, vjust = 2))
+bbtm_performance
+```
+
+## Starboy
+
+```{R}
+starboy_performance = ggplot(starboy) + geom_boxplot(aes(x = Week_Position, y = Song, color = Song)) + labs(x = "Week Position", y = "Songs", title = "Starboy Song Rankings on the Billboard Hot 100 Chart") + xlim(1, 100) + theme(plot.title = element_text(size= 12, hjust = 0.5, vjust = 2))
+starboy_performance
+```
+
+## My Dear Melancholy
+
+```{R}
+mdm_performance = ggplot(mdm) + geom_boxplot(aes(x = Week_Position, y = Song, color = Song)) + labs(x = "Week Position", y = "Songs", title = "My Dear Melancholy Song Rankings on the Billboard Hot 100 Chart") + xlim(1, 100) + theme(plot.title = element_text(size= 12, hjust = 0.5, vjust = 2))
+mdm_performance
+```
+
+## After Hours
+```{R}
+ah_performance = ggplot(ah) + geom_boxplot(aes(x = Week_Position, y = Song, color = Song)) + labs(x = "Week Position", y = "Songs", title = "After Hours Song Rankings on the Billboard Hot 100 Chart") + xlim(1, 100) + theme(plot.title = element_text(size= 12, hjust = 0.5, vjust = 2))
+ah_performance
+```
+# The average rank number of songs per album.
+
+
+```{R}
+#Trilogy
+trilogy_avg_pos = mean(trilogy$Week_Position)
+trilogy_avg_pos
+#Beauty Behind The Madness
+bbtm_avg_pos = mean(bbtm$Week_Position)
+bbtm_avg_pos
+#Starboy
+starboy_avg_pos = mean(starboy$Week_Position)
+starboy_avg_pos
+#My Dear Melancholy
+mdm_avg_pos = mean(mdm$Week_Position)
+mdm_avg_pos
+#After Hours
+ah_avg_pos = mean(ah$Week_Position)
+ah_avg_pos
+```
