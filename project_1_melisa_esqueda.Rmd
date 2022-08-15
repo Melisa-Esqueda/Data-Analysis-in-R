@@ -1,0 +1,326 @@
+---
+title: "Project 1: Hurricanes Data Exploratory Analysis"
+author: "Melisa Esqueda"
+date: "2/21/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Purpose
+
+The purpose of this project is to perform exploratory data analysis on the hurricanes data in the North Atlantic from the years 1980 to 2020 in order to effectively answer the three provided research questions, which are:
+
+1) What is the “typical” number of major hurricanes (i.e. hurricanes of category 3, 4, and 5) that tend to occur per year?
+
+2) Which months are the top three most active (where most of the hurricanes tend to
+occur)?
+
+3) During the analyzed period (1980-2020), are there any hurricanes that made U.S.
+landfall before June and after November?
+
+# Importing Data in R
+
+Before we perform this analysis, we have to import the data into R. The data that we'll be using for this analysis comes from the _International Best Track Archive for Climate Stewardship_ (IBTrACS) website: [IBTrACS](https://www.ncdc.noaa.gov/ibtracs/index.php?name=ib-v4-access).
+Since there are a variety of datasets in this Website, the specific data set that we'll be using for this analysis is called `ibtracs.NA.list.v04r00.csv`, which can be downloaded from this website: [IBTrACS v04 data](https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r00/access/csv/).
+
+The three packages that we'll be using for this analysis are dplyr, ggplot2 and maps.
+```{R}
+library(dplyr)
+library(ggplot2)
+library(maps)
+```
+
+Only the first sixteen columns will be used when performing this analysis. Also, it is very important to make sure that each column name gets assigned the appropriate data type. 
+
+```{R}
+#setwd('/Users/Melisa_Esqueda/Documents/Stat 133/Project 1')
+
+column_names = c('SID', 'SEASON', 'NUMBER', 'BASIN', 'SUBBASIN', 'NAME', 'ISO_TIME', 'NATURE', 'LAT', 'LON', 'WMO_WIND', 'WMO_PRES', 'WMO_AGENCY', 'TRACK_TYPE', 'DIST2LAND', 'LANDFALL') #Names of the first sixteen columns
+
+column_types = c('character', 'integer', 'integer', 'character', 'character', 'character', 'character', 'character', 'real', 'real', 'integer', 'integer', 'character', 'character', 'integer', 'integer') #The data type of the corresponding column names.
+
+h_data = read.csv(file = 'ibtracs.NA.list.v04r00.csv', #Names of the data
+                  colClasses = c(column_types, rep("NULL", 147)), 
+                  stringsAsFactors = FALSE, 
+                  skip = 86272, #We want hurricanes from 1980 to 2020 only.
+                  na.strings = c(" ", 'MM'))
+
+colnames(h_data) = column_names
+h_data
+```
+
+
+## Adding a MONTH column
+
+An additional column called `MONTH` will be added to the data frame.
+
+```{R}
+h_data$MONTH <- as.numeric(substr(h_data$ISO_TIME, 6, 7))
+
+str(h_data, vec.len = 1)
+```
+Now we're ready to perform analysis on this data!
+
+# Univariate Exploratory Data Analysis (Not to be reported)
+
+Before answering the three provided research questions, we need to examine the granularity and the complexity of the values from each column.
+
+- In the SEASON column, the values are represented as years. Every year has reported hurricanes. 
+
+```{R, eval = FALSE}
+unique(pull(h_data, SEASON)) #Obtain unique SEASON values. 
+```
+
+- In the BASIN column, NA and EP are the most common values. 
+```{R, eval = FALSE}
+select(h_data, BASIN)
+unique(pull(h_data, BASIN)) #Obtain unique BASIN values
+count(h_data, BASIN) #Count of each BASIN value
+```
+
+- In the SUBBASIN column, CS, GM, and NA are the most common values. 
+```{R, eval = FALSE}
+unique(pull(h_data, SUBBASIN)) #Unique SUBBASIN values
+count(h_data, SUBBASIN) #count of each SUBBASIN value
+```
+- In the ISO_TIME column, the values are in the right format. Hours are in multiples of 3, which range from 0-21. Not all times get explicitly represented in this column.
+
+```{R, eval = FALSE}
+select(h_data, ISO_TIME) 
+```
+
+- In the NATURE column, TS, ET, DS, SS and NR are the most common values.
+
+```{R, eval = FALSE}
+select(h_data, NATURE)
+unique(pull(h_data, NATURE)) #Obtain unique NATURE values
+arrange(count(h_data, NATURE), desc(n)) #Since a lot of values are used, using the arrange function would be appropriate when examining the most common values
+```
+
+- The histogram for the LAT column is right skewed
+```{R, eval = FALSE}
+summarise(                         #Obtain the summary stats of the LAT column
+  h_data, 
+  min = min(LAT, na.rm = TRUE),
+  median = median(LAT, na.rm = TRUE),
+  avg = mean(LAT, na.rm = TRUE),
+  max = max(LAT, na.rm = TRUE)
+)
+
+lat_count = count(h_data, LAT)  
+lat_count
+
+ggplot(data = lat_count) + geom_histogram(aes(x = LAT)) #Visualize count of LAT values
+```
+
+- The histogram for the LON columns is roughly normal. 
+```{R, eval = FALSE}
+summarise(                             #Obtain the summary stats of the LON column
+  h_data, 
+  min = min(LON, na.rm = TRUE),
+  median = median(LON, na.rm = TRUE),
+  avg = mean(LON, na.rm = TRUE),
+  max = max(LON, na.rm = TRUE)
+)
+
+lon_count = count(h_data, LON)
+lon_count
+
+ggplot(data = lon_count) + geom_histogram(aes(x = LON))
+```
+
+- The Histogram for the WMO_WIND column is right skewed. 
+```{R, eval = FALSE}
+summarise(                               #Obtain summary stats for WMO_WIND
+  h_data, 
+  min = min(WMO_WIND, na.rm = TRUE),
+  median = median(WMO_WIND, na.rm = TRUE),
+  avg = mean(WMO_WIND, na.rm = TRUE),
+  max = max(WMO_WIND, na.rm = TRUE)
+)
+ggplot(data = h_data) + geom_histogram(aes(x = WMO_WIND)) #Visualize counts of wind speed
+```
+
+- The histogram for the WMO_PRES column is right skewed. 
+```{R, eval = FALSE}
+summarise(                          #Obtain the summary stats of the WMO_PRES column
+  h_data, 
+  min = min(WMO_PRES, na.rm = TRUE),
+  median = median(WMO_PRES, na.rm = TRUE),
+  avg = mean(WMO_PRES, na.rm = TRUE),
+  max = max(WMO_PRES, na.rm = TRUE)
+)
+
+ggplot(data = h_data) + geom_histogram(aes(x = WMO_PRES)) #VIsualize counts of wind pressure values
+```
+
+- The histogram for the DIST2LAND column is strongly right skewed. 
+```{R, eval = FALSE}
+summarise(                    #Obtain the summary stats of the DIST2LAND column
+  h_data, 
+  min = min(DIST2LAND, na.rm = TRUE),
+  median = median(DIST2LAND, na.rm = TRUE),
+  avg = mean(DIST2LAND, na.rm = TRUE),
+  max = max(DIST2LAND, na.rm = TRUE)
+)
+ggplot(data = h_data) + geom_histogram(aes(x = DIST2LAND)) #Visualize the counts of DIST2LAND column
+```
+
+- The histogram for the LANDFALL column is strongly right skewed. 
+```{R, eval = FALSE}
+summarise(                      #Obtain the summary stats of the LANDFALL column
+  h_data, 
+  min = min(LANDFALL, na.rm = TRUE),
+  median = median(LANDFALL, na.rm = TRUE),
+  avg = mean(LANDFALL, na.rm = TRUE),
+  max = max(LANDFALL, na.rm = TRUE)
+)
+
+ggplot(data = h_data) + geom_histogram(aes(x = LANDFALL)) #Visualize the counts of the LANDFALL values
+```
+# Further Analysis
+
+Now that we've become familiar with the granularity and complexity of the values for each column, it is time to perform exploratory data analysis in order to accurately answer the given research questions.
+
+## 1) What is the “typical” number of major hurricanes (i.e. hurricanes of category 3, 4, and 5) that tend to occur per year?
+
+When I saw the word 'typical', I immediately thought of the word average. When it comes to hurricanes, a storm would be considered a hurricane if its wind speed is at least 64 knots. Since this research question focuses on the categories of the hurricanes, it would be essential to have a category column that determines the category of each hurricane. In order to accomplish this, we would need to filter the hurricanes of each column based on the the intervals of wind speed determined by categories 1 to 5. Then, we'll extract the hurricanes that are from categories 3 to 5. Most importantly, grouping the data by SID would give us the unique hurricanes. There are two ways we can examine the average number of major hurricanes per year, which are determining the average number of unique major hurricanes per year and determining the average number of hurricanes from each category per year. 
+
+WMO_WIND column is the desired column for this research question.
+
+```{R}
+wmo_wind_col = select(h_data, WMO_WIND) #The required column
+wmo_wind_col
+```
+
+We'll add three additional columns, which are category, year, and SID. For the category column, we'll assign TRUE values for now and then replace the values with categories later on. We'll rename the column SEASON as the variable year in order to be more precise.
+
+```{R}
+wmo_wind_w_bools = mutate(wmo_wind_col, category = TRUE, year = h_data$SEASON, SID = h_data$SID)
+```
+
+We'll subset values that meet the wind speed criteria for each category and replace the boolean values in the category column with the appropriate category number. 
+
+```{R}
+wmo_wind_w_bools$category[wmo_wind_col$WMO_WIND >= 64 & wmo_wind_col$WMO_WIND <= 82] <- "category 1" 
+
+wmo_wind_w_bools$category[wmo_wind_col$WMO_WIND >= 83 & wmo_wind_col$WMO_WIND <= 95] <- "category 2" 
+
+wmo_wind_w_bools$category[wmo_wind_col$WMO_WIND >= 96 & wmo_wind_col$WMO_WIND <= 112] <- "category 3" 
+
+wmo_wind_w_bools$category[wmo_wind_col$WMO_WIND >= 113 & wmo_wind_col$WMO_WIND <= 136] <- "category 4" 
+
+wmo_wind_w_bools$category[wmo_wind_col$WMO_WIND >= 137] <- "category 5" 
+```
+
+Now that all the hurricanes have been assigned a category, we'll extract the hurricanes that are of categories 3 to 5. 
+
+```{R}
+categories_3_to_5 = filter(wmo_wind_w_bools, category == 'category 3' | category == 'category 4' | category == 'category 5')
+categories_3_to_5
+```
+
+- We'll first focus on the analysis of determining the average number of unique major hurricanes per year, which can be accomplished by grouping by the year and SID columns. 
+
+```{R}
+h_by_year_SID = categories_3_to_5 %>% 
+  group_by(year, SID) %>% tally()
+h_by_year_SID
+```
+
+Now, we'll find the total number of unique major of hurricanes per year.
+
+```{R}
+summarise(group_by(h_by_year_SID, year), n = sum(n))
+```
+
+To visualize the average number of major hurricanes per year, the histogram will be helpful in directly showing this.
+
+```{R}
+ggplot(data = categories_3_to_5) + geom_histogram(aes(x = year), colour="black", fill = 'blue') + xlab("Year") + ylab("Count") + labs(title = 'Typical Number of Major Hurricanes Per Year')
+```
+
+As we can see from this histogram, this histogram is slightly left skewed, which means that the mean wouldn't be helpful in determining the average number of major hurricanes per year. This indicates that we need to calculate the median instead of the mean number of major hurricanes in order to determine a more accurate average value. To calculate the median, we'll have to convert the table from line 215 to a data frame since we need to extract the second column.
+
+```{R}
+num_of_h_year = as.data.frame(summarise(group_by(h_by_year_SID, year), n = sum(n)))
+median(num_of_h_year$n)
+```
+
+- Now, we'll focus on finding the average number of major hurricanes per category per year. In order to do this, we need to find the number of hurricanes per group. 
+
+```{R}
+h_by_cat = categories_3_to_5 %>% 
+  group_by(year, category) %>% tally()
+h_by_cat
+```
+
+We need to find the mean number of hurricanes per category.
+
+```{R}
+summarise(group_by(h_by_cat, category), mean = mean(n))
+```
+
+To visualize the average number of hurricanes per category per year, the box plot will be helpful in directly showing this because the box plot explicitly shows the mean.
+
+```{R}
+ggplot(data = h_by_cat, mapping = aes(x = n, y = category, fill = category)) +
+  geom_boxplot() + xlab("Count") + labs(title = 'Typical Number of Major Hurricanes From Each Category Per Year')
+```
+As we can see in the box plot above, category 4 has the highest average of hurricane count per year and category 5 has the lowest average of hurricane count per year.
+
+## 2) Which months are the top three most active (where most of the hurricanes tend to occur)?
+From reading this question, it is obvious that the MONTH column will be needed for this analysis. The word 'top' suggests that we will need to arrange the values of the number of hurricanes per month and from there, we'll extract the three months that had the highest number of hurricanes.
+
+Since we care about hurricanes, we need to filter the hurricanes that have a wind speed of 64 knots.
+
+```{R}
+hurricanes = filter(h_data, WMO_WIND >= 64) 
+months_h_counts = arrange(
+  select(hurricanes, MONTH) %>% 
+    count(MONTH, sort = TRUE), #count the number of months
+  desc(n)) #number of hurricanes in descending order
+head(months_h_counts, 3)
+```
+
+A bar plot would work amazing for visualizing the number of hurricanes per month.
+
+```{R}
+ggplot(months_h_counts, aes(x = MONTH, y = n, fill = 'pink')) + geom_bar(stat = "identity") + scale_x_continuous(breaks = round(seq(min(months_h_counts$MONTH), max(months_h_counts$MONTH), by = 1),1)) + ylab('Count') + labs(title = 'Number of Hurricanes Per Month')
+```
+
+As we can see from the bar plot above, the top three months with the highest number of hurricanes are September, August, and October in decreasing order. 
+
+## 3) During the analyzed period (1980-2020), are there any hurricanes that made U.S. landfall before June and after November? 
+
+The restrictions on the months and landfall indicates that the data needs to be filtered based on months and landfall. Also, we're focusing on hurricanes and so we need to filter hurricanes. In order to make the identification of U.S. landfalls easier, we will map the paths (Latitudes and Longitudes) with USA map.
+
+```{R}
+before_6_and_after_11 = h_data %>% #Filter hurricanes by month
+  group_by(SID) %>% 
+  filter(MONTH < 6 | MONTH >11)
+
+hurricanes_only = filter(before_6_and_after_11, WMO_WIND >= 64) #Hurricanes only
+hurricanes_only
+
+landfall_zero = filter(hurricanes_only, LANDFALL == 0)
+landfall_zero #Filter hurricanes by landfall of zero only
+```
+
+Now that the data is filtered to our desired manner, We will map the paths (Latitudes and Longitudes) with USA map.
+
+```{R}
+usa_maps = map_data("usa") #Data for USA map
+
+#USA map with the paths of hurricanes
+ggplot() + geom_map(data = usa_maps, map = usa_maps, aes(map_id = region)) + expand_limits(x = usa_maps$long, y = usa_maps$lat) + geom_path(data = before_6_and_after_11, aes(y = LAT, x = LON, col = SID)) +theme(legend.text = element_text(size = 6)) + labs(title = 'Hurricane Landfalls Before June and After November') + xlab('LONGITUDE') + ylab("LATITUDE")
+
+```
+
+As we can see from the two different colored lines laying on the map, there are two hurricanes that made U.S Landfall during this specific time. 
+
+
+
+
